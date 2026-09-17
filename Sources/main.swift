@@ -31,6 +31,7 @@ final class Model: ObservableObject {
         guard let s = snapshot else { return "0/0" }; let good = s.devices.filter { self.state($0) == "ok" }.count; return String(good)+"/"+String(s.devices.count)
     }
     func state(_ d: Device) -> String {
+        if d.checked_at == 0 { return "unknown" }
         guard let s = snapshot, now-s.at < 100000, now-d.checked_at < 100000 else { return "stale" }
         return d.status
     }
