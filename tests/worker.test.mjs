@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import worker from '../online/worker.js';
+const DB={prepare:()=>({bind(){return this},async first(){return null},async all(){return {results:[]}}}),async batch(){}};
+test('requires device token',async()=>assert.equal((await worker.fetch(new Request('https://example.com/check'),{DEVICE_TOKENS:'{}',DB})).status,401));
+test('ignores spoofed forwarded-for',async()=>{const r=await worker.fetch(new Request('https://example.com/check',{headers:{authorization:'Bearer secret','x-device-id':'local','x-forwarded-for':'203.0.113.10','cf-connecting-ip':'203.0.113.11'}}),{DEVICE_TOKENS:'{"local":"secret"}',EXPECTED_IP:'203.0.113.10',DB});assert.equal((await r.json()).result,'MISMATCH')});
+test('missing edge IP cannot pass',async()=>{const r=await worker.fetch(new Request('https://example.com/check',{headers:{authorization:'Bearer secret','x-device-id':'local'}}),{DEVICE_TOKENS:'{"local":"secret"}',EXPECTED_IP:'203.0.113.10',DB});assert.equal((await r.json()).result,'UNVERIFIED')});
+test('history stays private',async()=>assert.equal((await worker.fetch(new Request('https://example.com/history'),{ADMIN_TOKEN:'secret',DB})).status,401));

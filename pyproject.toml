@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codex-vpn"
+version = "0.1.0"
+description = "Read-only proxy egress and Codex connection observability"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+readme = "README.md"
+dependencies = []
+
+[project.scripts]
+codex-vpn = "codex_vpn.__main__:main"
+
+[tool.setuptools.package-data]
+codex_vpn = ["dashboard.html"]
+
+[tool.setuptools.packages.find]
+include = ["codex_vpn*"]

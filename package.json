@@ -1,0 +1,1 @@
+{"name":"codex-vpn-worker-tests","private":true,"type":"module","scripts":{"test":"node --test tests/worker.test.mjs"},"engines":{"node":">=22"}}

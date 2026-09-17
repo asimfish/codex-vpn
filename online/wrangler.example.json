@@ -1,0 +1,8 @@
+{
+  "name": "codex-vpn-check",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {"EXPECTED_IP": "203.0.113.10"},
+  "d1_databases": [{"binding": "DB", "database_name": "codex-vpn-checks", "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"}]
+}
