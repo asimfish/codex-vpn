@@ -1,0 +1,17 @@
+[Unit]
+Description=Codex session-scoped turn-state canary relay
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/.local/share/unified-ip-watch/gateway-canary/run.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/share/unified-ip-watch/gateway-canary
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=default.target

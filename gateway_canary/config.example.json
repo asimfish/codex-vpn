@@ -1,0 +1,6 @@
+{
+  "mode": "off",
+  "upstream_url": "https://YOUR-CODEX-UPSTREAM/v1/responses",
+  "ttl_seconds": 3600,
+  "egress_profile": "gateway-canary-4090"
+}
