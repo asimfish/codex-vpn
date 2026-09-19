@@ -17,11 +17,12 @@ Read-only multi-machine proxy monitoring, a local browser dashboard, a transluce
 3. [Quick start](#quick-start)
 4. [macOS floating widget](#macos-floating-widget)
 5. [Multiple machines](#multiple-machines)
-6. [Verify a Codex task](#verify-a-codex-task)
-7. [Online IP checker](#online-ip-checker)
-8. [Configuration and storage](#configuration-and-storage)
-9. [Development and verification](#development-and-verification)
-10. [Troubleshooting](#troubleshooting)
+6. [Reproducible five-device profile](#reproducible-five-device-profile)
+7. [Verify a Codex task](#verify-a-codex-task)
+8. [Online IP checker](#online-ip-checker)
+9. [Configuration and storage](#configuration-and-storage)
+10. [Development and verification](#development-and-verification)
+11. [Troubleshooting](#troubleshooting)
 
 ## What it shows
 
@@ -193,6 +194,10 @@ python3 -m codex_vpn collect
 ```
 
 `collect` prints a snapshot and updates the widget's local cache. SSH failure produces an unavailable row, never fabricated green data. New devices are picked up on the next collection cycle. There is no arbitrary remote-command field or automatic SSH configuration editing.
+
+## Reproducible five-device profile
+
+For a reproducible five-device topology (30109, mainskill, 5090, 4090 and a Mac) with the proxy/control port matrix and five-node selector shape, see [`examples/five-device-lab/README_CN.md`](examples/five-device-lab/README_CN.md). The profile is sanitized: fill in your own SSH aliases, expected egress IP and controller secrets locally.
 
 ## Verify a Codex task
 

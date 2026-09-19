@@ -1,0 +1,61 @@
+{
+  "node": "美国|02",
+  "expected_ip": "203.0.113.10",
+  "nodes": [
+    "美国|01",
+    "美国|02",
+    "美国|03",
+    "美国|04",
+    "美国|05"
+  ],
+  "devices": [
+    {
+      "id": "30109",
+      "name": "30109",
+      "ssh": "REPLACE_WITH_SSH_ALIAS_30109",
+      "remote_home": "/home/REPLACE_WITH_USER",
+      "proxy_port": 7890,
+      "controller_port": 9090,
+      "selector_group": "US-ONLY",
+      "controller_secret_env": "CODEX_VPN_CONTROLLER_SECRET_30109"
+    },
+    {
+      "id": "mainskill",
+      "name": "mainskill",
+      "ssh": "REPLACE_WITH_SSH_ALIAS_MAINSKILL",
+      "remote_home": "/home/REPLACE_WITH_USER",
+      "proxy_port": 7890,
+      "controller_port": 9097,
+      "selector_group": "US-ONLY",
+      "controller_secret_env": "CODEX_VPN_CONTROLLER_SECRET_MAINSKILL"
+    },
+    {
+      "id": "5090",
+      "name": "5090",
+      "ssh": "REPLACE_WITH_SSH_ALIAS_5090",
+      "remote_home": "/home/REPLACE_WITH_USER",
+      "proxy_port": 7897,
+      "controller_port": 9097,
+      "selector_group": "US-ONLY",
+      "controller_secret_env": "CODEX_VPN_CONTROLLER_SECRET_5090"
+    },
+    {
+      "id": "4090",
+      "name": "liyufeng_4090",
+      "ssh": "REPLACE_WITH_SSH_ALIAS_4090",
+      "remote_home": "/home/REPLACE_WITH_USER",
+      "proxy_port": 7890,
+      "controller_port": 9090,
+      "selector_group": "US-ONLY",
+      "controller_secret_env": "CODEX_VPN_CONTROLLER_SECRET_4090"
+    },
+    {
+      "id": "mac",
+      "name": "Mac",
+      "proxy_port": 7890,
+      "controller_port": 9097,
+      "selector_group": "US-ONLY",
+      "controller_secret_env": "CODEX_VPN_CONTROLLER_SECRET_MAC"
+    }
+  ]
+}
