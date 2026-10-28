@@ -155,6 +155,10 @@ For a build-only check that does not install a login item or start the app:
 python3 scripts/install_macos.py --dest .build/CodexVPN.app --no-autostart --no-start
 ```
 
+### macOS widget maintenance
+
+The widget shows device egress and Codex connection evidence without personal CPA account lists or remote CPA status collection. Compact and expanded windows stay within the primary display. If the read-only collector exits or its samples remain stale, the app restarts the collector.
+
 ## Multiple machines
 
 On **each remote Linux/Mac machine**:

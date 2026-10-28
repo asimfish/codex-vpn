@@ -141,6 +141,10 @@ python3 scripts/install_macos.py
 python3 scripts/install_macos.py --dest .build/CodexVPN.app --no-autostart --no-start
 ```
 
+### macOS 悬浮窗维护
+
+悬浮窗只展示设备出口和 Codex 连接证据，不集成个人 CPA 账号列表或远程 CPA 状态采集。迷你与完整窗口切换后会保持在主屏可见范围；采集子进程退出或样本持续过期时，应用会重新启动只读采集器。
+
 ## 添加服务器
 
 在**每台被监控服务器**上先克隆仓库并初始化：

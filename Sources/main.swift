@@ -37,7 +37,7 @@ final class Model: ObservableObject {
     }
 }
 func statusColor(_ status: String) -> Color { status == "ok" ? Color(red:0.7,green:0.92,blue:0.46) : status == "mismatch" ? .red : .orange }
-func statusLabel(_ status: String) -> String { ["ok":"出口一致","mismatch":"IP/节点异常","stale":"数据过期","error":"检测失败","unknown":"等待数据"][status] ?? status }
+func statusLabel(_ status: String) -> String { ["ok":"出口一致","mismatch":"IP/节点异常","stale":"数据过期","error":"检测失败","unknown":"采集连接不可用"][status] ?? status }
 func miniStatus(_ state: String, _ codex: String) -> String {
     if state == "stale" || state == "unknown" { return "pending" }
     if state == "mismatch" || state == "error" || codex == "路径不一致" { return "bad" }
@@ -166,8 +166,13 @@ final class Delegate: NSObject, NSApplicationDelegate {
     var panel: FloatingPanel!
     var status: NSStatusItem!
     var child: Process?
+    var stopping = false
+    var watchdog: Timer?
+    var activity: NSObjectProtocol?
     var compact = false
     var fullSize = NSSize(width:390,height:690)
+    let fullMinSize = NSSize(width:390,height:520)
+    let compactSize = NSSize(width:86,height:420)
     let model = Model()
     func applicationDidFinishLaunching(_ notification: Notification) {
         if NSRunningApplication.runningApplications(withBundleIdentifier:"com.asimfish.codex-vpn").count > 1 { NSApp.terminate(nil); return }
@@ -175,10 +180,11 @@ final class Delegate: NSObject, NSApplicationDelegate {
         panel.title="Codex VPN悬浮窗"; panel.level = .floating; panel.isOpaque=false; panel.backgroundColor = .clear
         panel.hasShadow=true; panel.isMovableByWindowBackground=true; panel.hidesOnDeactivate=false
         panel.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary]
-        panel.minSize=NSSize(width:330,height:360)
+        panel.minSize=fullMinSize
         panel.contentView=NSHostingView(rootView:PanelView(model:model))
         panel.setFrameAutosaveName("IPWatchFloatingPanel")
         if !panel.setFrameUsingName("IPWatchFloatingPanel"), let screen=NSScreen.main { panel.setFrameOrigin(NSPoint(x:screen.visibleFrame.maxX-410,y:screen.visibleFrame.maxY-720)) }
+        normalizeFullFrame()
         status=NSStatusBar.system.statusItem(withLength:NSStatusItem.variableLength)
         status.button?.title="◉ IP"
         let menu=NSMenu()
@@ -188,36 +194,79 @@ final class Delegate: NSObject, NSApplicationDelegate {
         status.menu=menu
         model.toggleCompact = { [weak self] in self?.toggleCompact() }
         if UserDefaults.standard.bool(forKey:"compact") { toggleCompact() }
+        activity=ProcessInfo.processInfo.beginActivity(options:.userInitiatedAllowingIdleSystemSleep,reason:"Refresh visible read-only proxy status")
         startCollector();panel.orderFrontRegardless()
+        watchdog=Timer.scheduledTimer(withTimeInterval:30,repeats:true) { [weak self] _ in
+            guard let self=self,!self.stopping else { return }
+            if self.child?.isRunning != true { self.startCollector();return }
+            let url=FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/share/codex-vpn/widget-snapshot.json")
+            if let data=try? Data(contentsOf:url),let value=try? JSONDecoder().decode(Snapshot.self,from:data),Date().timeIntervalSince1970*1000-value.at>120000 { self.child?.terminate() }
+        }
     }
     func startCollector() {
+        guard !stopping,child?.isRunning != true else { return }
         guard let script=Bundle.main.path(forResource:"collector",ofType:"py") else { return }
         let p=Process();p.executableURL=URL(fileURLWithPath:"/usr/bin/python3");p.arguments=[script]
         p.standardOutput=FileHandle.nullDevice;p.standardError=FileHandle.nullDevice
+        p.terminationHandler = { [weak self] _ in
+            DispatchQueue.main.asyncAfter(deadline:.now()+2) { [weak self] in
+                guard let self=self,!self.stopping else { return };self.startCollector()
+            }
+        }
         do { try p.run();child=p } catch { }
     }
     @objc func show() { panel.orderFrontRegardless() }
     @objc func hide() { panel.orderOut(nil) }
     @objc func toggleLevel() { panel.level = panel.level == .floating ? .normal : .floating }
+    // Keep the panel on the primary display. The previous implementation used
+    // the panel's current screen, so shrinking a window on an external display
+    // could leave the mini panel outside the display the user was looking at.
+    func visibleFrame() -> NSRect {
+        let primary = NSScreen.screens.first(where: {
+            abs($0.frame.minX) < 0.5 && abs($0.frame.minY) < 0.5
+        })
+        return primary?.visibleFrame ?? NSScreen.main?.visibleFrame ?? NSRect(x:0,y:0,width:1728,height:1021)
+    }
+    func validFullSize(_ value: NSSize) -> NSSize {
+        let screen=visibleFrame()
+        let maxWidth=max(fullMinSize.width,screen.width-24)
+        let maxHeight=max(fullMinSize.height,screen.height-24)
+        let width=value.width.isFinite ? min(max(value.width,fullMinSize.width),maxWidth) : fullMinSize.width
+        let height=value.height.isFinite ? min(max(value.height,fullMinSize.height),maxHeight) : fullMinSize.height
+        return NSSize(width:width,height:height)
+    }
+    func safeOrigin(_ origin: NSPoint, size: NSSize, in screen: NSRect) -> NSPoint {
+        NSPoint(x:max(screen.minX,min(origin.x,screen.maxX-size.width)),y:max(screen.minY,min(origin.y,screen.maxY-size.height)))
+    }
+    func normalizeFullFrame() {
+        let screen=visibleFrame()
+        let size=validFullSize(panel.frame.size)
+        let origin=safeOrigin(panel.frame.origin,size:size,in:screen)
+        fullSize=size
+        panel.setFrame(NSRect(origin:origin,size:size),display:false)
+    }
     @objc func toggleCompact() {
-        let old = panel.frame
+        let old=panel.frame
+        let screen=visibleFrame()
         if !compact {
-            fullSize=old.size
+            fullSize=validFullSize(old.size)
             panel.saveFrame(usingName:"IPWatchFloatingPanel")
         }
         compact.toggle()
         UserDefaults.standard.set(compact,forKey:"compact")
         panel.setFrameAutosaveName(compact ? "IPWatchMiniPanel" : "IPWatchFloatingPanel")
-        panel.minSize = compact ? NSSize(width:52,height:240) : NSSize(width:330,height:360)
-        panel.contentView = compact ? NSHostingView(rootView:MiniView(model:model)) : NSHostingView(rootView:PanelView(model:model))
-        let size = compact ? NSSize(width:58,height:max(270,CGFloat(model.snapshot?.devices.count ?? 5)*43+65)) : fullSize
-        var origin=NSPoint(x:old.maxX-size.width,y:old.maxY-size.height)
-        if let screen=panel.screen?.visibleFrame { origin.x=max(screen.minX,min(origin.x,screen.maxX-size.width));origin.y=max(screen.minY,min(origin.y,screen.maxY-size.height)) }
+        let deviceHeight=CGFloat(model.snapshot?.devices.count ?? 5)*54
+        let miniHeight=min(screen.height,max(420,deviceHeight+90))
+        let size=compact ? NSSize(width:compactSize.width,height:miniHeight) : validFullSize(fullSize)
+        panel.minSize=compact ? compactSize : fullMinSize
+        panel.contentView=compact ? NSHostingView(rootView:MiniView(model:model)) : NSHostingView(rootView:PanelView(model:model))
+        let origin=safeOrigin(NSPoint(x:old.maxX-size.width,y:old.maxY-size.height),size:size,in:screen)
         panel.setFrame(NSRect(origin:origin,size:size),display:true)
+        panel.layoutIfNeeded()
         panel.orderFrontRegardless()
     }
     @objc func quit() { NSApp.terminate(nil) }
-    func applicationWillTerminate(_ notification: Notification) { child?.terminate();panel.saveFrame(usingName:compact ? "IPWatchMiniPanel" : "IPWatchFloatingPanel") }
+    func applicationWillTerminate(_ notification: Notification) { stopping=true;watchdog?.invalidate();child?.terminate();if let activity=activity { ProcessInfo.processInfo.endActivity(activity) };panel.saveFrame(usingName:compact ? "IPWatchMiniPanel" : "IPWatchFloatingPanel") }
 }
 if CommandLine.arguments.contains("--self-test") {
     assert(miniStatus("ok","PID连接已观测")=="good")
